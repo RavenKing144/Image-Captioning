@@ -9,6 +9,7 @@ Original file is located at
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 import cv2
 import keras
 import re
@@ -49,7 +50,7 @@ for i in captions:
     description[img_name] = []
   description[img_name].append(desc)
 
-"""**Data Cleaning**"""
+"""###Data Cleaning"""
 
 def clean_text(sentence):
   sentence = sentence.lower()
@@ -68,7 +69,7 @@ f = open("description.txt","w")
 f.write(str(description))
 f.close()
 
-"""**Creating a Vocablary**"""
+"""###Creating a Vocablary"""
 
 vocab = set()
 for key in description.keys():
@@ -92,7 +93,7 @@ threshold = 10
 sorted_freq_cnt = [x for x in sorted_freq_cnt if x[1]>10]
 total_words = [x[0] for x in sorted_freq_cnt]
 
-"""**Preparing training and testing dataset**"""
+"""###Preparing training and testing dataset"""
 
 train_filedata = readTextFile("/content/drive/My Drive/Image segmentation/Flickr_TextData/Flickr_8k.trainImages.txt")
 test_filedata = readTextFile("/content/drive/My Drive/Image segmentation/Flickr_TextData/Flickr_8k.testImages.txt")
@@ -108,3 +109,61 @@ for img_id in train:
   for cap in description[img_id]:
     cap_to_append = "<s> " + cap + " <e>"
     train_desc[img_id].append(cap_to_append)
+
+"""###Transfer Learning
+-Images ---> Features<br>
+-Text ---> Features
+
+**Image Feature Extraction**
+"""
+
+model = ResNet50(weights="imagenet", input_shape=(224,224,3))
+model.summary()
+
+new_model = Model(model.input, model.layers[-2].output)
+new_model.summary()
+
+def preprocess_img(img):
+  img = Image.open(img)
+  img = img.resize((224,224))
+  img = np.array(img)
+  img = np.expand_dims(img,axis=0)
+  #Normalization
+  img = preprocess_input(img)
+  return img
+
+Img_path = "/content/drive/My Drive/Image segmentation/Images"
+
+def encode_img(img):
+  img = preprocess_img(img)
+  feature = new_model.predict(img)
+  feature = feature.reshape((-1,))
+  return feature
+
+encoding_train = {}
+#img_id -> feature extracted from resnet50
+start = time()
+for i, img_id in enumerate(train):
+  img_path = Img_path + "/" + img_id + ".jpg"
+  encoding_train[img_id] = encode_img(img_path)
+  if i%100==0:
+    print("encoding in progress %d"%i)
+end =time()
+print("Total time taken ", end-start)
+
+#Store Features to disk
+with open("encoded_train_feature.pkl","wb") as f:
+  pickle.dump(encoding_train,f)
+
+encoding_test = {}
+#img_id -> feature extracted from resnet50
+start = time()
+for i, img_id in enumerate(test):
+  img_path = Img_path + "/" + img_id + ".jpg"
+  encoding_test[img_id] = encode_img(img_path)
+  if i%100==0:
+    print("encoding in progress %d"%i)
+end =time()
+print("Total time taken ", end-start)
+with open("encoded_test_feature.pkl","wb") as f:
+  pickle.dump(encoding_test,f)
