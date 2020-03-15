@@ -39,6 +39,7 @@ captions = readTextFile("/content/drive/My Drive/Image segmentation/Flickr_TextD
 captions = captions.split('\n')[:-1]
 print(len(captions))
 
+#Code for formation of description.txt file that have been used in further coding directly by reading the files
 #Dictionary to map list of captions it has with it
 description = {}
 for i in captions:
@@ -140,6 +141,9 @@ def encode_img(img):
   feature = feature.reshape((-1,))
   return feature
 
+ 
+'''
+###Code for formation of pickle file that have been used in further coding directly by reading those files
 encoding_train = {}
 #img_id -> feature extracted from resnet50
 start = time()
@@ -167,7 +171,7 @@ end =time()
 print("Total time taken ", end-start)
 #Store Features to disk
 with open("encoded_test_feature.pkl","wb") as f:
-  pickle.dump(encoding_test,f)
+  pickle.dump(encoding_test,f)'''
 
 """###Data Preprocessing for Caption"""
 
