@@ -132,7 +132,7 @@ def preprocess_img(img):
   img = preprocess_input(img)
   return img
 
-Img_path = "/content/drive/My Drive/Image segmentation/Images"
+Img_path = "/content/drive/My Drive/Image segmentation/Images/"
 
 def encode_img(img):
   img = preprocess_img(img)
@@ -150,13 +150,13 @@ for i, img_id in enumerate(train):
   if i%100==0:
     print("encoding in progress %d"%i)
 end =time()
-print("Total time taken ", end-start)
+print("Total time taken ", end-start)'''
 
 #Store Features to disk
-with open("encoded_train_feature.pkl","wb") as f:
-  pickle.dump(encoding_train,f)
+'''with open("encoded_train_feature.pkl","wb") as f:
+  pickle.dump(encoding_train,f)'''
 
-encoding_test = {}
+'''encoding_test = {}
 #img_id -> feature extracted from resnet50
 start = time()
 for i, img_id in enumerate(test):
@@ -192,11 +192,11 @@ print(max_length)
 vocab_size = len(index_to_word) + 1
 print(vocab_size)
 
-with open('encoded_test_feature.pkl', 'rb') as f:
+with open('/content/drive/My Drive/Image segmentation/encoded_test_feature.pkl', 'rb') as f:
     data = pickle.load(f)
 encoding_test = data
 
-with open('encoded_train_feature.pkl', 'rb') as f:
+with open('/content/drive/My Drive/Image segmentation/encoded_train_feature.pkl', 'rb') as f:
     data = pickle.load(f)
 print(type(data))
 encoding_train = data
@@ -209,7 +209,7 @@ def data_generator(train_desc, encoding_train, word_to_index, max_len, batch_siz
   while True:
     for key,cap_list in train_desc.items():
       n+=1
-      photo = encoding_train[key+".jpg"]
+      photo = encoding_train[ key+".jpg"]
       for cap in cap_list:
         seq = [word_to_index[word] for word in cap.split() if word in word_to_index]
         for i in range(1,len(seq)):
@@ -253,3 +253,70 @@ embedding_matrix = get_embedding_matrix()
 print(embedding_matrix.shape)
 
 """####Model Architecture"""
+
+input_img_features = Input(shape = (2048,))
+inp_img = Dropout(0.3)(input_img_features)
+inp_img2 = Dense(256, activation = 'relu')(inp_img)
+
+#Captions as input
+input_captions = Input(shape=(max_length,))
+inp_cap = Embedding(input_dim=vocab_size, output_dim=50, mask_zero=True)(input_captions)
+inp_cap2 = Dropout(0.3)(inp_cap)
+inp_cap3 = LSTM(256)(inp_cap2)
+
+decoder1 = add([inp_img2, inp_cap3])
+decoder2 = Dense(256, activation = "relu")(decoder1)
+output = Dense(vocab_size, activation="softmax")(decoder2)
+
+#Combined Model
+model = Model(inputs = [input_img_features,input_captions], outputs = output)
+model.summary()
+
+model.layers[2].set_weights([embedding_matrix])
+model.layers[2].trainable = False
+
+model.compile(loss='categorical_crossentropy', optimizer='adam')
+
+"""###Training of Model"""
+
+###Trainning Model Code
+epochs = 10
+batch_len = 3
+steps = len(train_desc)//batch_len
+
+for i in range(epochs):
+  generator = data_generator(train_desc, encoding_train, word_to_index, max_length, batch_len)
+  model.fit_generator(generator, epochs=1,steps_per_epoch=steps, verbose=1)
+  model.save("model_" + str(i) + ".h5")
+
+
+
+###Prediction
+
+def prediction(photo):
+  inp_text = "<s>"
+  for i in range(max_length):
+    sequence = [word_to_index[w] for w in inp_text.split() if w in word_to_index]
+    sequence = pad_sequences([sequence], maxlen=max_length, padding = 'post')
+    ypred = model.predict([photo, sequence])
+    ypred = ypred.argmax() #word with maximum probability
+    word = index_to_word[ypred]
+    inp_text += (' ' + word)
+    if word == "<e>":
+      break
+  final_caption = inp_text[1:-1]
+  final_caption = ' '.join(final_caption)
+  return final_caption
+
+#Pick some random images and see results
+for i in range(15):
+  no = np.random.randint(0,1000)
+  all_img_name = list(encoding_test.keys())
+  img_name = all_img_name[no]
+  photo_2048 = encoding_test[img_name].reshape((1,2048))
+  j = plt.imread(Img_path+img_name+".jpg")
+  plt.imshow(j)
+  plt.axis("off")
+  plt.show()
+  caption = prediction(photo_2048)
+  print(caption)
