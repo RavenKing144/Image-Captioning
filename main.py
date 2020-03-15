@@ -35,7 +35,7 @@ def readTextFile(path):
     captions = f.read()
   return captions
 
-captions = readTextFile("/content/drive/My Drive/Image segmentation/Flickr_TextData/Flickr8k.token.txt")
+captions = readTextFile("/Flickr_TextData/Flickr8k.token.txt") #In the downloaded dataset
 captions = captions.split('\n')[:-1]
 print(len(captions))
 
@@ -95,8 +95,8 @@ total_words = [x[0] for x in sorted_freq_cnt]
 
 """###Preparing training and testing dataset"""
 
-train_filedata = readTextFile("/content/drive/My Drive/Image segmentation/Flickr_TextData/Flickr_8k.trainImages.txt")
-test_filedata = readTextFile("/content/drive/My Drive/Image segmentation/Flickr_TextData/Flickr_8k.testImages.txt")
+train_filedata = readTextFile("./Flickr_TextData/Flickr_8k.trainImages.txt")#Download the dataset and you will get this path
+test_filedata = readTextFile("./Flickr_TextData/Flickr_8k.testImages.txt")
 
 train = [row.split(".")[0] for row in train_filedata.split("\n")[:-1]]
 test = [row.split(".")[0] for row in test_filedata.split("\n")[:-1]]
@@ -132,7 +132,7 @@ def preprocess_img(img):
   img = preprocess_input(img)
   return img
 
-Img_path = "/content/drive/My Drive/Image segmentation/Images/"
+Img_path = "./Images" # Download the dataset and give the path of image folder here
 
 def encode_img(img):
   img = preprocess_img(img)
@@ -192,11 +192,11 @@ print(max_length)
 vocab_size = len(index_to_word) + 1
 print(vocab_size)
 
-with open('/content/drive/My Drive/Image segmentation/encoded_test_feature.pkl', 'rb') as f:
+with open('./encoded_test_feature.pkl', 'rb') as f:
     data = pickle.load(f)
 encoding_test = data
 
-with open('/content/drive/My Drive/Image segmentation/encoded_train_feature.pkl', 'rb') as f:
+with open('./encoded_train_feature.pkl', 'rb') as f:
     data = pickle.load(f)
 print(type(data))
 encoding_train = data
@@ -279,7 +279,7 @@ model.compile(loss='categorical_crossentropy', optimizer='adam')
 
 """###Training of Model"""
 
-###Trainning Model Code
+'''###Trainning Model Code
 epochs = 10
 batch_len = 3
 steps = len(train_desc)//batch_len
@@ -287,9 +287,9 @@ steps = len(train_desc)//batch_len
 for i in range(epochs):
   generator = data_generator(train_desc= train_desc, encoding_train= encoding_train, word_to_index=word_to_index, max_len=max_length, batch_size=batch_len)
   model.fit_generator(generator, epochs=1,steps_per_epoch=steps, verbose=1)
-  model.save("model_" + str(i) + ".h5")
+  model.save("model_" + str(i) + ".h5")'''
 
-
+model = load_model("./model_29.h5")
 
 ###Prediction
 
