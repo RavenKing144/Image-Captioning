@@ -209,14 +209,14 @@ def data_generator(train_desc, encoding_train, word_to_index, max_len, batch_siz
   while True:
     for key,cap_list in train_desc.items():
       n+=1
-      photo = encoding_train[ key+".jpg"]
+      photo = encoding_train[ key]
       for cap in cap_list:
         seq = [word_to_index[word] for word in cap.split() if word in word_to_index]
         for i in range(1,len(seq)):
-          xi = seq[:i]
+          xi = seq[0:i]
           yi = seq[i]
           #0 denotes padding word
-          xi = pad_sequences([xi], max_length=max_len, value = 0, padding = 'post')[0]
+          xi = pad_sequences([xi], maxlen=max_len, value = 0, padding = 'post')[0]
           yi = to_categorical([yi], num_classes=vocab_size)[0]
           x1.append(photo)
           x2.append(xi)
@@ -285,7 +285,7 @@ batch_len = 3
 steps = len(train_desc)//batch_len
 
 for i in range(epochs):
-  generator = data_generator(train_desc, encoding_train, word_to_index, max_length, batch_len)
+  generator = data_generator(train_desc= train_desc, encoding_train= encoding_train, word_to_index=word_to_index, max_len=max_length, batch_size=batch_len)
   model.fit_generator(generator, epochs=1,steps_per_epoch=steps, verbose=1)
   model.save("model_" + str(i) + ".h5")
 
