@@ -165,5 +165,66 @@ for i, img_id in enumerate(test):
     print("encoding in progress %d"%i)
 end =time()
 print("Total time taken ", end-start)
+#Store Features to disk
 with open("encoded_test_feature.pkl","wb") as f:
   pickle.dump(encoding_test,f)
+
+"""###Data Preprocessing for Caption"""
+
+word_to_index = {}
+index_to_word = {}
+for i,word in enumerate(total_words):
+  word_to_index[word] = i+1
+  index_to_word[i+1] = word
+
+index_to_word[1832] = "<s>"
+index_to_word[1833] = "<e>"
+word_to_index["<s>"] = 1832
+word_to_index["<e>"] = 1833
+
+max_length = 0
+for key in train_desc.keys():
+  for cap in train_desc[key]:
+    max_length = max(max_length, len(cap.split()))
+print(max_length)
+
+vocab_size = len(index_to_word) + 1
+print(vocab_size)
+
+with open('encoded_test_feature.pkl', 'rb') as f:
+    data = pickle.load(f)
+encoding_test = data
+
+with open('encoded_train_feature.pkl', 'rb') as f:
+    data = pickle.load(f)
+print(type(data))
+encoding_train = data
+
+"""###Data Loader/Generator"""
+
+def data_generator(train_desc, encoding_train, word_to_index, max_len, batch_size):
+  x1,x2,y = [],[],[]
+  n = 0
+  while True:
+    for key,cap_list in train_desc.items():
+      n+=1
+      photo = encoding_train[key+".jpg"]
+      for cap in cap_list:
+        seq = [word_to_index[word] for word in cap.split() if word in word_to_index]
+        for i in range(1,len(seq)):
+          xi = seq[:i]
+          yi = seq[i]
+          #0 denotes padding word
+          xi = pad_sequences([xi], max_length=max_len, value = 0, padding = 'post')[0]
+          yi = to_categorical([yi], num_classes=vocab_size)[0]
+          x1.append(photo)
+          x2.append(xi)
+          y.append(yi)
+        if n == batch_size:
+          yield [[np.array(x1), np.array(x2)], np.array(y)]
+          n = 0
+          x1, x2, y = [], [], []
+
+data_generator(train_desc, encoding_train,word_to_index, max_length, 64)
+
+"""###Word Embedding"""
