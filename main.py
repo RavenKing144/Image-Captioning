@@ -39,7 +39,6 @@ captions = readTextFile("/content/drive/My Drive/Image segmentation/Flickr_TextD
 captions = captions.split('\n')[:-1]
 print(len(captions))
 
-#Code for formation of description.txt file that have been used in further coding directly by reading the files
 #Dictionary to map list of captions it has with it
 description = {}
 for i in captions:
@@ -141,10 +140,8 @@ def encode_img(img):
   feature = feature.reshape((-1,))
   return feature
 
- 
-'''
+'''encoding_train = {}
 ###Code for formation of pickle file that have been used in further coding directly by reading those files
-encoding_train = {}
 #img_id -> feature extracted from resnet50
 start = time()
 for i, img_id in enumerate(train):
@@ -229,6 +226,30 @@ def data_generator(train_desc, encoding_train, word_to_index, max_len, batch_siz
           n = 0
           x1, x2, y = [], [], []
 
-data_generator(train_desc, encoding_train,word_to_index, max_length, 64)
-
 """###Word Embedding"""
+
+f = open("/content/drive/My Drive/Image segmentation/glove.6B.50d.txt")
+
+embedding_index = {}
+for line in f:
+  values = line.split()
+  words = values[0]
+  word_embedding = np.array(values[1:], dtype='float')
+  embedding_index[words] = word_embedding
+  break
+
+f.close()
+
+def get_embedding_matrix():
+  emb_dim = 50
+  matrix = np.zeros((vocab_size, emb_dim))
+  for word, index in word_to_index.items():
+    embedding_vector = embedding_index.get(word)
+    if embedding_vector is not None:
+      matrix[index] = embedding_vector
+  return matrix
+
+embedding_matrix = get_embedding_matrix()
+print(embedding_matrix.shape)
+
+"""####Model Architecture"""
